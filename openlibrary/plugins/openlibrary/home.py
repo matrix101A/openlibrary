@@ -50,21 +50,24 @@ def get_homepage():
     )
     return dict(page)
 
+
 def get_cached_homepage():
     five_minutes = 5 * dateutil.MINUTE_SECS
     lang = web.ctx.get("lang", "en")
     return cache.memcache_memoize(
         get_homepage, "home.homepage." + lang, timeout=five_minutes)()
 
+
 class home(delegate.page):
     path = "/"
 
     def GET(self):
-        cached_homepage = get_cached_homepage()
+        cached_homepage = get_homepage()
         # when homepage is cached, home/index.html template
         # doesn't run ctx.setdefault to set the bodyid so we must do so here:
         web.template.Template.globals['ctx']['bodyid'] = 'home'
         return web.template.TemplateResult(cached_homepage)
+
 
 class random_book(delegate.page):
     path = "/random"
@@ -87,8 +90,10 @@ def get_ia_carousel_books(query=None, subject=None, work_id=None, sorts=None,
     limit = limit or lending.DEFAULT_IA_RESULTS
     books = lending.get_available(limit=limit, subject=subject, work_id=work_id,
                                   _type=_type, sorts=sorts, query=query)
-    formatted_books = [format_book_data(book) for book in books if book != 'error']
+    formatted_books = [format_book_data(book)
+                       for book in books if book != 'error']
     return formatted_books
+
 
 def get_featured_subjects():
     # web.ctx must be initialized as it won't be available to the background thread.
@@ -103,10 +108,12 @@ def get_featured_subjects():
     return dict([(subject_name, subjects.get_subject('/subjects/' + subject_name, sort='edition_count'))
                  for subject_name in FEATURED_SUBJECTS])
 
+
 @public
 def get_cached_featured_subjects():
     return cache.memcache_memoize(
         get_featured_subjects, "home.featured_subjects", timeout=dateutil.HOUR_SECS)()
+
 
 @public
 def generic_carousel(query=None, subject=None, work_id=None, _type=None,
@@ -123,6 +130,7 @@ def generic_carousel(query=None, subject=None, work_id=None, _type=None,
             sorts=sorts, limit=limit)[0]
     return storify(books) if books else books
 
+
 @public
 def readonline_carousel():
     """Return template code for books pulled from search engine.
@@ -136,8 +144,10 @@ def readonline_carousel():
         return storify(data)
 
     except Exception:
-        logger.error("Failed to compute data for readonline_carousel", exc_info=True)
+        logger.error(
+            "Failed to compute data for readonline_carousel", exc_info=True)
         return None
+
 
 def random_ebooks(limit=2000):
     solr = search.get_solr()
@@ -157,8 +167,11 @@ def random_ebooks(limit=2000):
 
     return [format_work_data(doc) for doc in result.get('docs', []) if doc.get('ia')]
 
+
 # cache the results of random_ebooks in memcache for 15 minutes
-random_ebooks = cache.memcache_memoize(random_ebooks, "home.random_ebooks", timeout=15*60)
+random_ebooks = cache.memcache_memoize(
+    random_ebooks, "home.random_ebooks", timeout=15*60)
+
 
 def format_list_editions(key):
     """Formats the editions of a list suitable for display in carousel.
@@ -183,11 +196,15 @@ def format_list_editions(key):
                 editions[e.key] = e
     return [format_book_data(e) for e in editions.values()]
 
+
 # cache the results of format_list_editions in memcache for 5 minutes
-format_list_editions = cache.memcache_memoize(format_list_editions, "home.format_list_editions", timeout=5*60)
+format_list_editions = cache.memcache_memoize(
+    format_list_editions, "home.format_list_editions", timeout=5*60)
+
 
 def pick_best_edition(work):
     return next((e for e in work.editions if e.ocaid))
+
 
 def format_work_data(work):
     d = dict(work)
@@ -205,10 +222,12 @@ def format_work_data(work):
                         zip(work['author_key'], work['author_name'])]
 
     if 'cover_edition_key' in work:
-        d['cover_url'] = h.get_coverstore_url() + "/b/olid/%s-M.jpg" % work['cover_edition_key']
+        d['cover_url'] = h.get_coverstore_url(
+        ) + "/b/olid/%s-M.jpg" % work['cover_edition_key']
 
     d['read_url'] = "//archive.org/stream/" + work['ia'][0]
     return d
+
 
 def format_book_data(book):
     d = web.storage()
@@ -240,6 +259,7 @@ def format_book_data(book):
         else:
             d.read_url = book.url("/borrow")
     return d
+
 
 def setup():
     pass
