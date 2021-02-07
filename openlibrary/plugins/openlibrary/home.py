@@ -60,7 +60,7 @@ class home(delegate.page):
     path = "/"
 
     def GET(self):
-        cached_homepage = get_cached_homepage()
+        cached_homepage = get_homepage()
         # when homepage is cached, home/index.html template
         # doesn't run ctx.setdefault to set the bodyid so we must do so here:
         web.template.Template.globals['ctx']['bodyid'] = 'home'
